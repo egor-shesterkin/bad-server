@@ -54,7 +54,7 @@ class Api {
             return existingToken
         }
 
-        const res = await fetch(`${this.baseUrl}/auth/csrf`, {
+        const res = await fetch(`${this.baseUrl}/auth/csrf-token`, {
             credentials: 'include',
         })
         const data = (await this.handleResponse<{ csrfToken: string }>(res))
