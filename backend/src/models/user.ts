@@ -8,6 +8,8 @@ import validator from 'validator'
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
 
+const LEGACY_MD5_HASH_REGEXP = /^[a-f0-9]{32}$/i
+
 export enum Role {
     Customer = 'customer',
     Admin = 'admin',
@@ -179,8 +181,20 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
     const user = await this.findOne({ email })
         .select('+password')
         .orFail(() => new UnauthorizedError('Неправильные почта или пароль'))
+
     const passwdMatch = await bcrypt.compare(password, user.password)
-    if (!passwdMatch) {
+    const legacyPasswdMatch =
+        !passwdMatch &&
+        LEGACY_MD5_HASH_REGEXP.test(user.password) &&
+        crypto.createHash('md5').update(password).digest('hex') ===
+            user.password
+
+    if (legacyPasswdMatch) {
+        user.password = password
+        await user.save()
+    }
+
+    if (!passwdMatch && !legacyPasswdMatch) {
         return Promise.reject(
             new UnauthorizedError('Неправильные почта или пароль')
         )
