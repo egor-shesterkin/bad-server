@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { FilterQuery, Error as MongooseError, Types } from 'mongoose'
+import validator from 'validator'
 import BadRequestError from '../errors/bad-request-error'
 import NotFoundError from '../errors/not-found-error'
 import Order, { IOrder } from '../models/order'
@@ -346,7 +347,7 @@ export const createOrder = async (
             payment,
             phone,
             email,
-            comment,
+            comment: typeof comment === 'string' ? validator.escape(comment) : '',
             customer: userId,
             deliveryAddress: address,
         })

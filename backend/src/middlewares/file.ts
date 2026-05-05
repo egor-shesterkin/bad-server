@@ -42,6 +42,9 @@ const types = [
     'image/gif',
 ]
 
+export const MIN_FILE_SIZE = 2 * 1024
+export const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 const fileFilter = (
     _req: Request,
     file: Express.Multer.File,
@@ -58,7 +61,7 @@ export default multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 2 * 1024 * 1024,
+        fileSize: MAX_FILE_SIZE,
         files: 1,
     },
 })

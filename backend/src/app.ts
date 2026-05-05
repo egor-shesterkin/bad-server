@@ -8,6 +8,7 @@ import helmet from 'helmet'
 import mongoose from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS } from './config'
+import BadRequestError from './errors/bad-request-error'
 import {
     ensureCsrfCookie,
     validateCsrfToken,
@@ -15,7 +16,7 @@ import {
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
-import { stripMongoOperators } from './utils/requestSecurity'
+import { hasMongoOperators, stripMongoOperators } from './utils/requestSecurity'
 
 const { PORT = 3000 } = process.env
 const app = express()
@@ -30,7 +31,7 @@ app.use(helmet({ crossOriginResourcePolicy: false }))
 app.use(
     rateLimit({
         windowMs: 60 * 1000,
-        limit: 300,
+        limit: 60,
         standardHeaders: true,
         legacyHeaders: false,
     })
@@ -52,6 +53,13 @@ app.use(json({ limit: '50kb' }))
 app.use((req, _res, next) => {
     req.body = stripMongoOperators(req.body)
     next()
+})
+app.use((req, _res, next) => {
+    if (hasMongoOperators(req.query)) {
+        return next(new BadRequestError('Недопустимые параметры запроса'))
+    }
+
+    return next()
 })
 app.use(ensureCsrfCookie)
 app.use(validateCsrfToken)

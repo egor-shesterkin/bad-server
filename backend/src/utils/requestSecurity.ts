@@ -1,4 +1,4 @@
-export const MAX_PAGE_SIZE = 50
+export const MAX_PAGE_SIZE = 10
 export const MAX_SEARCH_LENGTH = 80
 
 export function getString(value: unknown, maxLength = 255) {
@@ -60,4 +60,26 @@ export function stripMongoOperators(value: unknown): unknown {
     )
 
     return sanitized
+}
+
+export function hasMongoOperators(value: unknown): boolean {
+    if (Array.isArray(value)) {
+        return true
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim()
+        return trimmed.startsWith('$') || trimmed.includes('"$') || trimmed.includes("'$")
+    }
+
+    if (!value || typeof value !== 'object') {
+        return false
+    }
+
+    return Object.entries(value as Record<string, unknown>).some(
+        ([key, nestedValue]) =>
+            key.startsWith('$') ||
+            key.includes('.') ||
+            hasMongoOperators(nestedValue)
+    )
 }
