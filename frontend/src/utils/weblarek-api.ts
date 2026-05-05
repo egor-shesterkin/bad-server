@@ -48,7 +48,7 @@ class Api {
     }
 
     private async getCsrfToken() {
-        const existingToken = getCookie('csrfToken')
+        const existingToken = getCookie('_csrf') || getCookie('csrfToken')
 
         if (existingToken) {
             return existingToken
