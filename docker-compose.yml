@@ -4,6 +4,7 @@ services:
       context: frontend
     env_file:
       - frontend/.env
+    command: sh -c "cp -r /app/frontend-dist/. /app/frontend/dist && tail -f /dev/null"
     volumes:
       - frontend:/app/frontend/dist
 

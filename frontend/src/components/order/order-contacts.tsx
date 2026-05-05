@@ -14,7 +14,6 @@ import {
     orderFormActions,
     orderFormSelector,
 } from '../../services/slice/orderForm'
-import EditorInput from '../editor-text/editor-input'
 import styles from './order.module.scss'
 
 export function OrderContacts() {
@@ -38,11 +37,7 @@ export function OrderContacts() {
             email: orderPersistData.email,
             phone: orderPersistData.phone,
         })
-    }, [orderPersistData])
-
-    const handleEditInputChange = (value: string) => {
-        setValuesForm({ ...values, comment: value })
-    }
+    }, [orderPersistData, setValuesForm])
 
     const handleFormSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -94,9 +89,14 @@ export function OrderContacts() {
                 component={InputMask}
             />
 
-            <EditorInput
-                onChange={handleEditInputChange}
-                value={values.comment}
+            <Input
+                value={values.comment || ''}
+                onChange={handleChange}
+                component='textarea'
+                name='comment'
+                placeholder='Комментарий к заказу'
+                label='Комментарий'
+                error={errors.comment}
             />
 
             <div className={styles.order__buttons}>

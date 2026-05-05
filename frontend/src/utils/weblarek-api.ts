@@ -43,6 +43,25 @@ class Api {
         }
     }
 
+    private isUnsafeMethod(method?: string) {
+        return !['GET', 'HEAD', 'OPTIONS'].includes(method || 'GET')
+    }
+
+    private async getCsrfToken() {
+        const existingToken = getCookie('csrfToken')
+
+        if (existingToken) {
+            return existingToken
+        }
+
+        const res = await fetch(`${this.baseUrl}/auth/csrf`, {
+            credentials: 'include',
+        })
+        const data = (await this.handleResponse<{ csrfToken: string }>(res))
+
+        return data.csrfToken
+    }
+
     protected handleResponse<T>(response: Response): Promise<T> {
         return response.ok
             ? response.json()
@@ -55,9 +74,20 @@ class Api {
 
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const headers = new Headers(options.headers)
+
+            if (this.isUnsafeMethod(options.method)) {
+                headers.set('X-CSRF-Token', await this.getCsrfToken())
+            }
+
+            if (endpoint === '/auth/token' || endpoint === '/auth/logout') {
+                headers.set('X-CSRF-Token', await this.getCsrfToken())
+            }
+
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
+                headers,
             })
             return await this.handleResponse<T>(res)
         } catch (error) {

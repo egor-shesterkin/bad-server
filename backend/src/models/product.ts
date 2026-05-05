@@ -1,6 +1,6 @@
 import { unlink } from 'fs'
 import mongoose, { Document } from 'mongoose'
-import { join } from 'path'
+import { basename, join } from 'path'
 
 export interface IFile {
     fileName: string
@@ -55,7 +55,7 @@ cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
     const docToUpdate = await this.model.findOne(this.getQuery())
     if (updateImage && docToUpdate) {
         unlink(
-            join(__dirname, `../public/${docToUpdate.image.fileName}`),
+            join(__dirname, '../public', basename(docToUpdate.image.fileName)),
             (err) => console.log(err)
         )
     }
@@ -63,7 +63,7 @@ cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
 
 // Можно лучше: удалять файл с изображением после удаление сущности
 cardsSchema.post('findOneAndDelete', async (doc: IProduct) => {
-    unlink(join(__dirname, `../public/${doc.image.fileName}`), (err) =>
+    unlink(join(__dirname, '../public', basename(doc.image.fileName)), (err) =>
         console.log(err)
     )
 })
