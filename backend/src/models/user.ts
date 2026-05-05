@@ -109,7 +109,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         toJSON: {
             virtuals: true,
             transform: (_doc, ret) => {
-                const { tokens: _tokens, password: _password, _id, roles: _roles, ...rest } = ret
+                const { tokens: _tokens, password: _password, _id, ...rest } = ret
                 return rest
             },
         },

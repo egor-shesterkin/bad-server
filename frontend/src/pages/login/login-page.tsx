@@ -2,7 +2,7 @@ import Button from '@components/button/button'
 import Form, { Input } from '@components/form'
 import useFormWithValidation from '@components/form/hooks/useFormWithValidation'
 import { SyntheticEvent, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { useActionCreators } from '../../services/hooks'
 import { userActions } from '../../services/slice/user'
@@ -11,6 +11,7 @@ import { LoginFormValues } from './helpers/types'
 import styles from './login-page.module.scss'
 export default function LoginPage() {
     const formRef = useRef<HTMLFormElement>(null)
+    const navigate = useNavigate()
     const { values, handleChange, errors, isValid } =
         useFormWithValidation<LoginFormValues>(
             { email: '', password: '' },
@@ -22,6 +23,13 @@ export default function LoginPage() {
         e.preventDefault()
         loginUser(values)
             .unwrap()
+            .then((data) => {
+                navigate(
+                    data.user.roles?.includes('admin')
+                        ? AppRoute.Admin
+                        : AppRoute.Main
+                )
+            })
             .catch((err) => {
                 toast.error(err.message)
             })
