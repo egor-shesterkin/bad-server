@@ -2,13 +2,12 @@ import { errors } from 'celebrate'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import 'dotenv/config'
-import express, { json, urlencoded } from 'express'
+import express, { json, Request, urlencoded } from 'express'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import mongoose from 'mongoose'
 import path from 'path'
 import { DB_ADDRESS } from './config'
-import BadRequestError from './errors/bad-request-error'
 import {
     ensureCsrfCookie,
     validateCsrfToken,
@@ -16,7 +15,7 @@ import {
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
-import { hasMongoOperators, stripMongoOperators } from './utils/requestSecurity'
+import { stripMongoOperators } from './utils/requestSecurity'
 
 const { PORT = 3000 } = process.env
 const app = express()
@@ -55,11 +54,8 @@ app.use((req, _res, next) => {
     next()
 })
 app.use((req, _res, next) => {
-    if (hasMongoOperators(req.query)) {
-        return next(new BadRequestError('Недопустимые параметры запроса'))
-    }
-
-    return next()
+    req.query = stripMongoOperators(req.query) as Request['query']
+    next()
 })
 app.use(ensureCsrfCookie)
 app.use(validateCsrfToken)
