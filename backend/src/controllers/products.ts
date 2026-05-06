@@ -7,25 +7,27 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import { getPositiveInteger } from '../utils/requestSecurity'
 
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { page = 1, limit = 5 } = req.query
+        const page = getPositiveInteger(req.query.page, 1)
+        const limit = getPositiveInteger(req.query.limit, 5)
         const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (page - 1) * limit,
+            limit,
         }
         const products = await Product.find({}, null, options)
         const totalProducts = await Product.countDocuments({})
-        const totalPages = Math.ceil(totalProducts / Number(limit))
+        const totalPages = Math.ceil(totalProducts / limit)
         return res.send({
             items: products,
             pagination: {
                 totalProducts,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (err) {
@@ -92,14 +94,22 @@ const updateProduct = async (
             )
         }
 
+        const update: Record<string, unknown> = {}
+
+        ;['description', 'category', 'title', 'image'].forEach((field) => {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+                update[field] = req.body[field]
+            }
+        })
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'price')) {
+            update.price = req.body.price ?? null
+        }
+
         const product = await Product.findByIdAndUpdate(
             productId,
             {
-                $set: {
-                    ...req.body,
-                    price: req.body.price ? req.body.price : null,
-                    image: req.body.image ? req.body.image : undefined,
-                },
+                $set: update,
             },
             { runValidators: true, new: true }
         ).orFail(() => new NotFoundError('Нет товара по заданному id'))

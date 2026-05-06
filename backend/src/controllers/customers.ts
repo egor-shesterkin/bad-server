@@ -1,8 +1,24 @@
 import { NextFunction, Request, Response } from 'express'
-import { FilterQuery } from 'mongoose'
+import mongoose, { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import escapeRegExp from '../utils/escapeRegExp'
+import {
+    getDate,
+    getNumber,
+    getPositiveInteger,
+    getString,
+    MAX_SEARCH_LENGTH,
+} from '../utils/requestSecurity'
+
+const CUSTOMER_SORT_FIELDS = new Set([
+    'createdAt',
+    'lastOrderDate',
+    'totalAmount',
+    'orderCount',
+    'name',
+])
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -14,8 +30,6 @@ export const getCustomers = async (
 ) => {
     try {
         const {
-            page = 1,
-            limit = 10,
             sortField = 'createdAt',
             sortOrder = 'desc',
             registrationDateFrom,
@@ -28,18 +42,24 @@ export const getCustomers = async (
             orderCountTo,
             search,
         } = req.query
+        const page = getPositiveInteger(req.query.page, 1)
+        const limit = getPositiveInteger(req.query.limit, 10)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
-        if (registrationDateFrom) {
+        const registrationDateFromValue = getDate(registrationDateFrom)
+
+        if (registrationDateFromValue) {
             filters.createdAt = {
                 ...filters.createdAt,
-                $gte: new Date(registrationDateFrom as string),
+                $gte: registrationDateFromValue,
             }
         }
 
-        if (registrationDateTo) {
-            const endOfDay = new Date(registrationDateTo as string)
+        const registrationDateToValue = getDate(registrationDateTo)
+
+        if (registrationDateToValue) {
+            const endOfDay = registrationDateToValue
             endOfDay.setHours(23, 59, 59, 999)
             filters.createdAt = {
                 ...filters.createdAt,
@@ -47,15 +67,19 @@ export const getCustomers = async (
             }
         }
 
-        if (lastOrderDateFrom) {
+        const lastOrderDateFromValue = getDate(lastOrderDateFrom)
+
+        if (lastOrderDateFromValue) {
             filters.lastOrderDate = {
                 ...filters.lastOrderDate,
-                $gte: new Date(lastOrderDateFrom as string),
+                $gte: lastOrderDateFromValue,
             }
         }
 
-        if (lastOrderDateTo) {
-            const endOfDay = new Date(lastOrderDateTo as string)
+        const lastOrderDateToValue = getDate(lastOrderDateTo)
+
+        if (lastOrderDateToValue) {
+            const endOfDay = lastOrderDateToValue
             endOfDay.setHours(23, 59, 59, 999)
             filters.lastOrderDate = {
                 ...filters.lastOrderDate,
@@ -63,36 +87,46 @@ export const getCustomers = async (
             }
         }
 
-        if (totalAmountFrom) {
+        const totalAmountFromValue = getNumber(totalAmountFrom)
+
+        if (totalAmountFromValue !== undefined) {
             filters.totalAmount = {
                 ...filters.totalAmount,
-                $gte: Number(totalAmountFrom),
+                $gte: totalAmountFromValue,
             }
         }
 
-        if (totalAmountTo) {
+        const totalAmountToValue = getNumber(totalAmountTo)
+
+        if (totalAmountToValue !== undefined) {
             filters.totalAmount = {
                 ...filters.totalAmount,
-                $lte: Number(totalAmountTo),
+                $lte: totalAmountToValue,
             }
         }
 
-        if (orderCountFrom) {
+        const orderCountFromValue = getNumber(orderCountFrom)
+
+        if (orderCountFromValue !== undefined) {
             filters.orderCount = {
                 ...filters.orderCount,
-                $gte: Number(orderCountFrom),
+                $gte: orderCountFromValue,
             }
         }
 
-        if (orderCountTo) {
+        const orderCountToValue = getNumber(orderCountTo)
+
+        if (orderCountToValue !== undefined) {
             filters.orderCount = {
                 ...filters.orderCount,
-                $lte: Number(orderCountTo),
+                $lte: orderCountToValue,
             }
         }
 
-        if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+        const searchValue = getString(search, MAX_SEARCH_LENGTH)
+
+        if (searchValue) {
+            const searchRegex = new RegExp(escapeRegExp(searchValue), 'i')
             const orders = await Order.find(
                 {
                     $or: [{ deliveryAddress: searchRegex }],
@@ -104,20 +138,25 @@ export const getCustomers = async (
 
             filters.$or = [
                 { name: searchRegex },
-                { lastOrder: { $in: orderIds } },
+                { lastOrder: mongoose.trusted({ $in: orderIds }) },
             ]
         }
 
         const sort: { [key: string]: any } = {}
 
-        if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
+        const sortFieldValue = getString(sortField, 32)
+        const sortOrderValue = sortOrder === 'asc' ? 'asc' : 'desc'
+
+        if (sortFieldValue && CUSTOMER_SORT_FIELDS.has(sortFieldValue)) {
+            sort[sortFieldValue] = sortOrderValue === 'desc' ? -1 : 1
+        } else {
+            sort.createdAt = -1
         }
 
         const options = {
             sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (page - 1) * limit,
+            limit,
         }
 
         const users = await User.find(filters, null, options).populate([
@@ -137,15 +176,15 @@ export const getCustomers = async (
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / Number(limit))
+        const totalPages = Math.ceil(totalUsers / limit)
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
         })
     } catch (error) {
@@ -179,9 +218,13 @@ export const updateCustomer = async (
     next: NextFunction
 ) => {
     try {
+        const update = {
+            name: req.body.name,
+            phone: req.body.phone,
+        }
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            { $set: update },
             {
                 new: true,
             }

@@ -101,11 +101,7 @@ export default function AdminOrderDetail() {
                 extraClass: styles.profile__gridRowFullWidth,
                 render: (dataInfo: OrderData) => (
                     <>
-                        <div
-                            dangerouslySetInnerHTML={{
-                                __html: dataInfo.comment,
-                            }}
-                        />
+                        {dataInfo.comment || 'Комментариев нет'}
                     </>
                 ),
             },
@@ -124,7 +120,7 @@ export default function AdminOrderDetail() {
                 extraClass: styles.admin__gridRowFullWidth,
             },
         ],
-        [orderData]
+        [navigate, orderData]
     )
 
     if (!orderData) {

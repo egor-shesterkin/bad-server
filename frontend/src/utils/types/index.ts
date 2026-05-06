@@ -49,6 +49,7 @@ export interface IOrder {
 export interface IUser {
     email: string
     name: string
+    roles?: string[]
 }
 
 export interface ICustomer extends IUser {

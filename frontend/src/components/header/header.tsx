@@ -8,7 +8,8 @@ import HeaderNavigateProfile from './header-navigate-profile'
 import styles from './header.module.scss'
 export default function Header() {
     const user = useSelector(userSelectors.getUser)
-    const isAdmin = useMatch('/admin/*')
+    const hasAdminRole = useSelector(userSelectors.isAdmin)
+    const isAdminRoute = useMatch('/admin/*')
     const location = useLocation()
 
     return (
@@ -22,8 +23,8 @@ export default function Header() {
                     />
                 </Link>
 
-                {isAdmin && <HeaderNavigateAdmin />}
-                {!isAdmin && <HeaderNavigateProfile />}
+                {(hasAdminRole || isAdminRoute) && <HeaderNavigateAdmin />}
+                {!hasAdminRole && !isAdminRoute && <HeaderNavigateProfile />}
                 {!user && (
                     <Link
                         to={{ pathname: AppRoute.Login }}
@@ -56,8 +57,16 @@ export default function Header() {
                             </span>
                         </Link>
                         <Link
-                            title='Перейти в профиль'
-                            to={AppRoute.ProfileOrders}
+                            title={
+                                hasAdminRole
+                                    ? 'Перейти в админ-панель'
+                                    : 'Перейти в профиль'
+                            }
+                            to={
+                                hasAdminRole
+                                    ? AppRoute.Admin
+                                    : AppRoute.ProfileOrders
+                            }
                             onClick={() => {}}
                             className={clsx(
                                 styles.header__icon,

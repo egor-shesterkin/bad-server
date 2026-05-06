@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import Button from '@components/button'
-import { useEffect, useRef } from 'react'
+import { FormEvent, useEffect, useRef } from 'react'
 import { useActionCreators, useSelector } from '../../services/hooks'
 import {
     orderFormActions,
@@ -35,9 +35,10 @@ export function OrderAddress() {
             address: orderPersistData.address,
             payment: PaymentType.Online,
         })
-    }, [orderPersistData])
+    }, [orderPersistData, setValuesForm])
 
-    const nextStep = () => {
+    const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
         setInfo(values)
         navigate(
             { pathname: AppRoute.OrderContacts },
@@ -50,7 +51,7 @@ export function OrderAddress() {
     }
 
     return (
-        <Form formRef={formRef}>
+        <Form formRef={formRef} handleFormSubmit={handleFormSubmit}>
             <div className={styles.order__field}>
                 <div className={styles.order__buttons}>
                     <Radio
@@ -87,7 +88,7 @@ export function OrderAddress() {
                 error={errors.address}
             />
             <div className={styles.order__buttons}>
-                <Button type='submit' onClick={nextStep} disabled={!isValid}>
+                <Button type='submit' disabled={!isValid}>
                     Далее
                 </Button>
             </div>

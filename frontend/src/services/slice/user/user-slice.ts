@@ -28,14 +28,17 @@ export const userSlice = createSlice({
         builder
             .addCase(checkUserAuth.fulfilled, (state, action) => {
                 state.data = action.payload.user
+                state.roles = action.payload.user.roles || []
                 state.requestStatus = RequestStatus.Success
             })
             .addCase(registerUser.fulfilled, (state, action) => {
                 state.data = action.payload.user
+                state.roles = action.payload.user.roles || []
                 state.requestStatus = RequestStatus.Success
             })
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.data = action.payload.user
+                state.roles = action.payload.user.roles || []
                 state.requestStatus = RequestStatus.Success
             })
             .addCase(checkUserRoles.fulfilled, (state, action) => {
