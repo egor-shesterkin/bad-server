@@ -31,6 +31,10 @@ export const getOrders = async (
     next: NextFunction
 ) => {
     try {
+        if (res.locals.queryHasMongoOperators) {
+            return next(new BadRequestError('Недопустимые параметры запроса'))
+        }
+
         const {
             sortField = 'createdAt',
             sortOrder = 'desc',

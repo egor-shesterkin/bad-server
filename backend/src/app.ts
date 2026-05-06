@@ -15,7 +15,7 @@ import {
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
-import { stripMongoOperators } from './utils/requestSecurity'
+import { hasMongoOperators, stripMongoOperators } from './utils/requestSecurity'
 
 const { PORT = 3000 } = process.env
 const app = express()
@@ -53,7 +53,8 @@ app.use((req, _res, next) => {
     req.body = stripMongoOperators(req.body)
     next()
 })
-app.use((req, _res, next) => {
+app.use((req, res, next) => {
+    res.locals.queryHasMongoOperators = hasMongoOperators(req.query)
     req.query = stripMongoOperators(req.query) as Request['query']
     next()
 })
