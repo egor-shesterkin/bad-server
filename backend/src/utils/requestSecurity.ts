@@ -67,11 +67,6 @@ export function hasMongoOperators(value: unknown): boolean {
         return true
     }
 
-    if (typeof value === 'string') {
-        const trimmed = value.trim()
-        return trimmed.startsWith('$') || trimmed.includes('"$') || trimmed.includes("'$")
-    }
-
     if (!value || typeof value !== 'object') {
         return false
     }
